@@ -24,3 +24,16 @@ export function parseLinkHeader(header: string) {
   });
   return links;
 }
+
+/**
+ * Truncates a string to a specified length and appends an ellipsis if the string
+ * @param text - The text to truncate.
+ * @param maxLength - The maximum length of the truncated text.
+ * @returns The truncated text.
+ */
+export const truncateText = (text: string, maxLength = 350): string => {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return text.slice(0, maxLength) + "...";
+};

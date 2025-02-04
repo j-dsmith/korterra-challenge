@@ -13,6 +13,7 @@ export const repoSchema = z.object({
       stargazers_count: z.number(),
       forks_count: z.number(),
       open_issues_count: z.number(),
+      language: z.string().nullable(),
       license: z
         .object({
           name: z.string(),

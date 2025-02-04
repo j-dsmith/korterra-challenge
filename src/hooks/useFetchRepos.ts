@@ -1,24 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Repo, repoSchema } from "@/schemas/repoSchema";
-import { z } from "zod";
 import { parseLinkHeader } from "@/lib/utils";
+import { UseFetchReposResult } from "@/types/types";
 
 const BASE_URL = "https://api.github.com/search/repositories";
 
-type UseFetchReposResult = {
-  repos: Repo[];
-  loading: boolean;
-  error: string | null;
-  currentPage: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-  nextPage: () => void;
-  prevPage: () => void;
-};
-
 export const useFetchRepos = (
   query?: string,
-  language: "javascript" | "typescript" | "c#" = "javascript"
+  language: "javascript" | "typescript" | "csharp" = "javascript"
 ): UseFetchReposResult => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,15 +88,17 @@ export const useFetchRepos = (
   }, [fetchRepos]);
 
   // Get booleans for pagination from link header
-  const { hasNextPage, hasPrevPage } = useMemo(() => {
+  const { hasNextPage, hasPrevPage, lastPage } = useMemo(() => {
     if (!linkHeader) {
       return { hasNextPage: false, hasPrevPage: false };
     }
 
     const links = parseLinkHeader(linkHeader);
+
     return {
       hasNextPage: !!links.next,
       hasPrevPage: !!links.prev,
+      lastPage: links.last ? parseInt(links.last.split("=").pop() || "1") : 1,
     };
   }, [linkHeader]);
 
@@ -116,6 +107,7 @@ export const useFetchRepos = (
     loading,
     error,
     currentPage,
+    lastPage: lastPage || 1,
     hasNextPage,
     hasPrevPage,
     nextPage: hasNextPage ? () => setCurrentPage((prev) => prev + 1) : () => {},

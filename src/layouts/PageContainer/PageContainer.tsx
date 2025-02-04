@@ -1,11 +1,14 @@
 import React from "react";
 import "../../App.css";
-import styles from "./PageContainer.module.css";
 
 const PageContainer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  return <div className={styles.pageContainer}>{children}</div>;
+  return (
+    <div className="pt-8 pb-4 container border h-screen mx-auto text-3xl mb-6">
+      {children}
+    </div>
+  );
 };
 
 export default PageContainer;
