@@ -9,7 +9,9 @@ import { ProgrammingLanguage } from "@/types/types";
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [language, setLanguage] = useState<ProgrammingLanguage>("javascript");
+
   const searchResult = useFetchRepos(query, language);
+
   return (
     <PageContainer>
       <section className="flex flex-col gap-6 px-8 max-h-full">

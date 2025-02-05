@@ -1,18 +1,28 @@
 import { truncateText } from "@/lib/utils";
-import { Repo } from "@/schemas/repoSchema";
+import { Repository } from "@/schemas/repoSchema";
 import { FC } from "react";
 import { Button } from "./ui/Button";
 import { TableRow, TableCell } from "./ui/Table";
 import { useNavigate } from "react-router";
 
 type ResultGridItemProps = {
-  repo: Repo;
+  repo: Repository;
 };
 
 const BASE_URL = "/repo/";
 
 const ResultGridItem: FC<ResultGridItemProps> = ({ repo }) => {
   const navigate = useNavigate();
+
+  /**
+   * Navigate to the details page of the repository with
+   * the given ID. Pass the cached repository object as state.
+   */
+  const handleNavigate = () => {
+    navigate(`${BASE_URL}${repo.id}`, {
+      state: { repo },
+    });
+  };
 
   return (
     <TableRow key={repo.id} className="grid grid-cols-subgrid col-span-3">
@@ -31,10 +41,7 @@ const ResultGridItem: FC<ResultGridItemProps> = ({ repo }) => {
         {truncateText(repo.description ?? "")}
       </TableCell>
       <TableCell className="grid place-items-center">
-        <Button
-          onClick={() => navigate(`${BASE_URL}${repo.id}`, { state: { repo } })}
-          variant="outline"
-        >
+        <Button onClick={handleNavigate} variant="outline">
           Details
         </Button>
       </TableCell>

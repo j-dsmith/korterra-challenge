@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Repo, repoSchema } from "@/schemas/repoSchema";
+import { Repository, repositoriesSchema } from "@/schemas/repoSchema";
 import { parseLinkHeader } from "@/lib/utils";
-import { UseFetchReposResult } from "@/types/types";
+import { ProgrammingLanguage, UseFetchReposResult } from "@/types/types";
 
 const BASE_URL = "https://api.github.com/search/repositories";
 
 export const useFetchRepos = (
   query?: string,
-  language: "javascript" | "typescript" | "csharp" = "javascript"
+  language: ProgrammingLanguage = "javascript"
 ): UseFetchReposResult => {
-  const [repos, setRepos] = useState<Repo[]>([]);
+  const [repos, setRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,7 +17,7 @@ export const useFetchRepos = (
 
   // Cache previous search results
   const cache = useRef<
-    Map<string, { repos: Repo[]; linkHeader: string | null }>
+    Map<string, { repos: Repository[]; linkHeader: string | null }>
   >(new Map());
 
   // Debounce timeout ref
@@ -57,7 +57,7 @@ export const useFetchRepos = (
       setLinkHeader(linkHeader);
 
       const data = await response.json();
-      const parsedData = repoSchema.parse(data);
+      const parsedData = repositoriesSchema.parse(data);
 
       // Cache the result
       cache.current.set(cacheKey, { repos: parsedData.items, linkHeader });

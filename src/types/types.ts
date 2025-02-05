@@ -1,11 +1,11 @@
-import { Repo } from "@/schemas/repoSchema";
+import { Repository } from "@/schemas/repoSchema";
 
 // Programming languages supported by search API
-export type ProgrammingLanguage = "javascript" | "typescript" | "csharp";
+export type ProgrammingLanguage = "javascript" | "typescript" | "c#";
 
 // Return type of useFetchRepos hook
 export type UseFetchReposResult = {
-  repos: Repo[];
+  repos: Repository[];
   loading: boolean;
   error: string | null;
   currentPage: number;
