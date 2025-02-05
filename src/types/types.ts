@@ -15,3 +15,6 @@ export type UseFetchReposResult = {
   nextPage: () => void;
   prevPage: () => void;
 };
+
+// Repo Detail Icon type
+export type RepoDetailIconType = "star" | "fork" | "issue" | "license";

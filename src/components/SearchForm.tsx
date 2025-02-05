@@ -6,15 +6,15 @@ import {
   SetStateAction,
   useState,
 } from "react";
-import { Input } from "./ui/Input";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/Select";
-import { Button } from "./ui/Button";
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { ProgrammingLanguage } from "@/types/types";
 
 const languages = [
@@ -50,19 +50,19 @@ const SearchForm: FC<SearchFormProps> = ({
   };
 
   return (
-    <form className="flex gap-4" onSubmit={handleSubmit}>
+    <form className="flex flex-col md:flex-row gap-4" onSubmit={handleSubmit}>
       <Input
         type="text"
         value={searchTerm}
         onChange={handleInputChange}
         placeholder="Search repositories..."
-        className="flex-grow"
+        className="flex-1"
       />
       <Select
         value={language}
         onValueChange={(value: ProgrammingLanguage) => setLanguage(value)}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="md:w-[180px] w-full">
           <SelectValue placeholder="Select language" />
         </SelectTrigger>
         <SelectContent>

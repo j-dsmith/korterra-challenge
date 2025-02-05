@@ -1,98 +1,132 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Repository, repositoriesSchema } from "@/schemas/repoSchema";
+import { useEffect, useCallback, useReducer, useRef, useMemo } from "react";
+import { Repository } from "@/schemas/repoSchema";
 import { parseLinkHeader } from "@/lib/utils";
 import { ProgrammingLanguage, UseFetchReposResult } from "@/types/types";
+import { fetchRepos } from "@/api/fetchRepos";
 
-const BASE_URL = "https://api.github.com/search/repositories";
+// Define the shape of the state
+type State = {
+  repos: Repository[];
+  loading: boolean;
+  error: string | null;
+  currentPage: number;
+  linkHeader: string | null;
+};
+
+// Define the possible actions that can be dispatched to the reducer
+type Action =
+  | { type: "FETCH_START" }
+  | {
+      type: "FETCH_SUCCESS";
+      payload: { repos: Repository[]; linkHeader: string | null };
+    }
+  | { type: "FETCH_FAILURE"; payload: string }
+  | { type: "SET_PAGE"; payload: number };
+
+// Define the initial state
+const initialState: State = {
+  repos: [],
+  loading: true,
+  error: null,
+  currentPage: 1,
+  linkHeader: null,
+};
+
+// Define the reducer function
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        repos: action.payload.repos,
+        linkHeader: action.payload.linkHeader,
+      };
+    case "FETCH_FAILURE":
+      return { ...state, loading: false, error: action.payload };
+    case "SET_PAGE":
+      return { ...state, currentPage: action.payload };
+    default:
+      return state;
+  }
+};
 
 export const useFetchRepos = (
   query?: string,
   language: ProgrammingLanguage = "javascript"
 ): UseFetchReposResult => {
-  const [repos, setRepos] = useState<Repository[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [linkHeader, setLinkHeader] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { repos, loading, error, currentPage, linkHeader } = state;
 
-  // Cache previous search results
+  // Cache to store the fetched data
   const cache = useRef<
     Map<string, { repos: Repository[]; linkHeader: string | null }>
   >(new Map());
 
-  // Debounce timeout ref
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Fetch repos callback
+  const fetchReposCallback = useCallback(async () => {
+    dispatch({ type: "FETCH_START" });
 
-  const fetchRepos = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    // Setup cache key
+    // Generate a cache key based on the query, language, and current page
     const cacheKey = `${query}_${language}_${currentPage}`;
     const cachedData = cache.current.get(cacheKey);
     if (cachedData) {
-      setRepos(cachedData.repos);
-      setLinkHeader(cachedData.linkHeader);
-      setLoading(false);
+      // If the data is cached, return it and exit early
+      dispatch({
+        type: "FETCH_SUCCESS",
+        payload: cachedData,
+      });
       return;
     }
 
-    // Build the search query
-    const searchQuery = query
-      ? `${query}+language:${language}`
-      : `language:${language}`;
-    const url = `${BASE_URL}?q=${encodeURIComponent(
-      searchQuery
-    )}&per_page=10&page=${currentPage}`;
+    // Create an AbortController to cancel the fetch if needed
+    const controller = new AbortController();
+    const signal = controller.signal;
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(
-          `GitHub API error: ${response.status} - ${response.statusText}`
-        );
-      }
-
-      const linkHeader = response.headers.get("Link");
-      setLinkHeader(linkHeader);
-
-      const data = await response.json();
-      const parsedData = repositoriesSchema.parse(data);
-
-      // Cache the result
-      cache.current.set(cacheKey, { repos: parsedData.items, linkHeader });
-
-      setRepos(parsedData.items);
+      // Fetch the repositories
+      const { repos, linkHeader } = await fetchRepos(
+        query || "",
+        language,
+        currentPage,
+        signal
+      );
+      // Cache the fetched data
+      cache.current.set(cacheKey, { repos, linkHeader });
+      dispatch({
+        type: "FETCH_SUCCESS",
+        payload: { repos, linkHeader },
+      });
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setLoading(false);
+      if (error instanceof Error && error.name !== "AbortError") {
+        dispatch({
+          type: "FETCH_FAILURE",
+          payload: error instanceof Error ? error.message : "An error occurred",
+        });
+      }
     }
-  }, [language, query, currentPage]);
+  }, [query, language, currentPage]);
 
-  // Setup debounce to prevent rapid API calls when pagination is clicked
+  // Fetch repos on initial render and when the query or language changes, debounced by 200ms
   useEffect(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      fetchRepos();
+    const timeoutId = setTimeout(() => {
+      fetchReposCallback();
     }, 200);
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearTimeout(timeoutId);
     };
-  }, [fetchRepos]);
+  }, [fetchReposCallback]);
 
-  // Get booleans for pagination from link header
+  // Get the pagination state from the link header
   const { hasNextPage, hasPrevPage, lastPage } = useMemo(() => {
     if (!linkHeader) {
-      return { hasNextPage: false, hasPrevPage: false };
+      return { hasNextPage: false, hasPrevPage: false, lastPage: 1 };
     }
 
+    // Parse the link header to get the pagination info
     const links = parseLinkHeader(linkHeader);
 
     return {
@@ -110,9 +144,12 @@ export const useFetchRepos = (
     lastPage: lastPage || 1,
     hasNextPage,
     hasPrevPage,
-    nextPage: hasNextPage ? () => setCurrentPage((prev) => prev + 1) : () => {},
+    nextPage: hasNextPage
+      ? () => dispatch({ type: "SET_PAGE", payload: currentPage + 1 })
+      : () => {},
     prevPage: hasPrevPage
-      ? () => setCurrentPage((prev) => Math.max(1, prev - 1))
+      ? () =>
+          dispatch({ type: "SET_PAGE", payload: Math.max(1, currentPage - 1) })
       : () => {},
   };
 };

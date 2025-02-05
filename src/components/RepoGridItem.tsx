@@ -1,17 +1,17 @@
-import { truncateText } from "@/lib/utils";
+import { convertEmojiShortcode, truncateText } from "@/lib/utils";
 import { Repository } from "@/schemas/repoSchema";
 import { FC } from "react";
-import { Button } from "./ui/Button";
-import { TableRow, TableCell } from "./ui/Table";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
+import { TableCell, TableRow } from "@/components/ui/table";
 
-type ResultGridItemProps = {
+type RepoGridItemProps = {
   repo: Repository;
 };
 
 const BASE_URL = "/repo/";
 
-const ResultGridItem: FC<ResultGridItemProps> = ({ repo }) => {
+const RepoGridItem: FC<RepoGridItemProps> = ({ repo }) => {
   const navigate = useNavigate();
 
   /**
@@ -27,18 +27,20 @@ const ResultGridItem: FC<ResultGridItemProps> = ({ repo }) => {
   return (
     <TableRow key={repo.id} className="grid grid-cols-subgrid col-span-3">
       <TableCell className="grid items-center">
-        <a
-          href={repo.html_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          {repo.name}
-        </a>
+        <Button variant="link" asChild className="p-0 w-fit">
+          <a
+            href={repo.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className=""
+          >
+            {repo.name}
+          </a>
+        </Button>
       </TableCell>
 
-      <TableCell className="grid items-center">
-        {truncateText(repo.description ?? "")}
+      <TableCell className="grid items-center text-muted-foreground">
+        {truncateText(convertEmojiShortcode(repo.description ?? ""))}
       </TableCell>
       <TableCell className="grid place-items-center">
         <Button onClick={handleNavigate} variant="outline">
@@ -48,4 +50,4 @@ const ResultGridItem: FC<ResultGridItemProps> = ({ repo }) => {
     </TableRow>
   );
 };
-export default ResultGridItem;
+export default RepoGridItem;

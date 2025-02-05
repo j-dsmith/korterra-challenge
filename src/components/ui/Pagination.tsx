@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Button } from "./Button";
+import { Button } from "./button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type PaginationProps = {
@@ -19,8 +19,6 @@ const Pagination: FC<PaginationProps> = ({
   nextPage,
   prevPage,
 }) => {
-  console.log("nextPage", nextPage);
-  console.log("prevPage", prevPage);
   return (
     <div className="flex gap-2 items-center">
       <Button variant="ghost" disabled={!hasPrevPage} onClick={prevPage}>
